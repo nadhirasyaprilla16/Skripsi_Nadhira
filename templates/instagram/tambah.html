@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Instagram - Tambah Postingan{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Tambah Postingan Instagram</h1>
+
+<!-- ✅ Flash message -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<!-- 🔽 Form Bootstrap -->
+<form method="POST" class="needs-validation" novalidate>
+    <div class="mb-3">
+        <label class="form-label">Post ID</label>
+        <input type="text" name="post_id" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Produk</label>
+        <input type="text" name="produk" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Post Content</label>
+        <textarea name="post_content" class="form-control" rows="3" required></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Interaksi</label>
+        <input type="number" name="interaksi" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Akun yang Dijangkau</label>
+        <input type="number" name="akun_yang_dijangkau" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">View Non Followers</label>
+        <input type="number" step="0.01" name="view_non_followers" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Post Type</label>
+        <input type="number" name="post_type" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Simpan</button>
+    <a href="{{ url_for('instagram.dashboard') }}" class="btn btn-secondary ms-2">← Kembali</a>
+</form>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}TikTok - Edit Postingan{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Edit Postingan TikTok</h1>
+
+<!-- ✅ Flash Message -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<form method="POST" class="needs-validation" novalidate>
+    <div class="mb-3">
+        <label class="form-label">Post ID</label>
+        <input type="text" name="post_id" value="{{ post.post_id }}" class="form-control" readonly>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Produk</label>
+        <input type="text" name="produk" value="{{ post.produk }}" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Post Content</label>
+        <textarea name="post_content" class="form-control" rows="3" required>{{ post.post_content }}</textarea>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Engagement</label>
+        <input type="number" name="engagement" value="{{ post.engagement }}" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Tayangan</label>
+        <input type="number" name="tayangan" value="{{ post.tayangan }}" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">View Non Followers</label>
+        <input type="number" step="any" name="view_non_followers" value="{{ post.view_non_followers }}" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update</button>
+    <a href="{{ url_for('tiktok.index') }}" class="btn btn-secondary ms-2">← Kembali</a>
+</form>
+{% endblock %}

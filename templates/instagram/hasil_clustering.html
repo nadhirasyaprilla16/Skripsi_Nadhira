@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Hasil Clustering{% endblock %}
+{% block content %}
+<h2>Hasil Akhir Clustering</h2>
+
+<div class="alert alert-success">
+    Silhouette Score rata-rata untuk k={{ n_clusters }}: <strong>{{ silhouette | default(0) | round(4) }}</strong>
+</div>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Post ID</th>
+            <th>Produk</th>
+            <th>Post Content</th>
+            <th>Interaksi</th>
+            <th>Jangkauan</th>
+            <th>View Non Followers</th>
+            <th>Cluster</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in data.itertuples() %}
+        <tr>
+            <td>{{ row.post_id }}</td>
+            <td>{{ row.produk }}</td>
+            <td>{{ row.post_content[:50] }}{% if row.post_content|length > 50%}...{% endif %}</td>
+            <td>{{ row.interaksi }}</td>
+            <td>{{ row.jangkauan }}</td>
+            <td>{{ row.view_non_followers }}</td>
+            <td>{{ row.cluster }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Proses Clustering{% endblock %}
+{% block content %}
+<h2 class="mb-4">Form Input Proses Clustering</h2>
+<form method="POST" class="mb-4">
+    <div class="mb-3">
+        <label for="n_clusters" class="form-label">Jumlah Cluster (k)</label>
+        <input type="number" name="n_clusters" class="form-control" value="{{ n_clusters or 2 }}" min="2" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="max_iter" class="form-label">Maksimal Iterasi</label>
+        <input type="number" name="max_iter" class="form-control" value="{{ max_iter or 10 }}" min="1" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="init_method" class="form-label">Metode Inisialisasi Centroid</label>
+        <select name="init_method" class="form-select" required>
+            <option value="k-means++" {% if init_method == 'k-means++' %}selected{% endif %}>k-means++ (Acak Terarah)</option>
+            <option value="random" {% if init_method == 'random' %}selected{% endif %}>Random (Acak Murni)</option>
+            <option value="mean" {% if init_method == 'mean' %}selected{% endif %}>Mean (Rata-rata Data)</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">🔁 Proses Clustering</button>
+</form>
+
+<hr>
+
+{% if centroid_history %}
+<div class="accordion" id="accordionIterasi">
+    {% set iterasi_count = [centroid_history|length, distance_matrix|length, assignment_per_iter|length]|min %}
+    {% for i in range(iterasi_count) %}
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="heading{{ i }}">
+            <button class="accordion-button {% if i != 0 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ i }}" aria-expanded="true" aria-controls="collapse{{ i }}">
+                Iterasi {{ i }}
+            </button>
+        </h2>
+        <div id="collapse{{ i }}" class="accordion-collapse collapse {% if i == 0 %}show{% endif %}" aria-labelledby="heading{{ i }}" data-bs-parent="#accordionIterasi">
+            <div class="accordion-body">
+                <h5>Centroid Iterasi {{ i }}</h5>
+                <table class="table table-bordered table-sm">
+                    <thead><tr><th>Cluster</th><th>x</th><th>y</th><th>z</th></tr></thead>
+                    <tbody>
+                    {% for c in range(centroid_history[i]|length) %}
+                    <tr>
+                        <td>C{{ c+1 }}</td>
+                        <td>{{ centroid_history[i][c][0]|round(4) }}</td>
+                        <td>{{ centroid_history[i][c][1]|round(4) }}</td>
+                        <td>{{ centroid_history[i][c][2]|round(4) }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+                <h6>Jarak Euclidean</h6>
+                {% if distance_matrix[i] and distance_matrix[i][0] %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                {% for c in range(distance_matrix[i][0]|length) %}
+                                <th>Centroid {{ c+1 }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in range(distance_matrix[i]|length) %}
+                            <tr>
+                                <td>Data {{ r+1 }}</td>
+                                {% for val in distance_matrix[i][r] %}
+                                <td>{{ val|round(4) }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p class="text-muted">Data Euclidean tidak tersedia untuk iterasi ini.</p>
+                {% endif %}
+
+                <h6>Assignment</h6>
+                {% if assignment_per_iter[i] %}
+                <table class="table table-sm table-bordered">
+                    <thead><tr><th>Data</th><th>Cluster</th></tr></thead>
+                    <tbody>
+                        {% for d in range(assignment_per_iter[i]|length) %}
+                            <tr><td>Data {{ d+1 }}</td><td>{{ assignment_per_iter[i][d]+1 }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                    <p class="text-muted">Assignment tidak tersedia untuk iterasi ini.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
