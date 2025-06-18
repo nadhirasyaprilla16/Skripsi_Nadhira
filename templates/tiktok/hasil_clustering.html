@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
-{% block title %}Hasil Clustering{% endblock %}
+{% block title %}Hasil Clustering TikTok{% endblock %}
 
 {% block content %}
-<h2>Hasil Akhir Clustering</h2>
+<h2>Hasil Akhir Clustering TikTok</h2>
 
 <!-- Silhouette Score -->
 <div class="alert alert-success">
@@ -13,10 +13,10 @@
     {% endif %}
 </div>
 
-<!-- 🔝 Tabel Rata-rata Evaluasi Tiap Cluster -->
+<!-- 📈 Peringkat Evaluasi -->
 <div class="mb-4">
-    <h5>📈 Peringkat Rata-rata Evaluasi per Cluster</h5>
-    <table class="custom-table mb-3">
+    <h5>📊 Rata-rata Evaluasi per Cluster</h5>
+    <table class="custom-table mb-3" style="max-width:600px">
         <thead>
             <tr>
                 <th>Peringkat</th>
@@ -27,12 +27,11 @@
         <tbody>
             {% for item in cluster_summary %}
             <tr>
-                <td>{{ loop.index }}</td> <!-- loop.index = 1-based index -->
+                <td>{{ loop.index }}</td>
                 <td>Cluster {{ item.cluster + 1 }}</td>
                 <td>{{ "%.4f"|format(item.avg_evaluasi) }}</td>
             </tr>
             {% endfor %}
-
         </tbody>
     </table>
 </div>
@@ -55,10 +54,10 @@
         <tr>
             <th>Post ID</th>
             <th>Produk</th>
-            <th>Post Content</th>
-            <th>Interaksi</th>
-            <th>Jangkauan</th>
-            <th>View Non Followers</th>
+            <th>Konten</th>
+            <th>Engagement</th>
+            <th>Tayangan</th>
+            <th>View Non-Followers</th>
             <th>Cluster</th>
             <th>Evaluasi</th>
         </tr>
@@ -69,8 +68,8 @@
             <td>{{ row.post_id }}</td>
             <td>{{ row.produk }}</td>
             <td>{{ row.post_content[:50] }}{% if row.post_content|length > 50 %}...{% endif %}</td>
-            <td>{{ row.interaksi }}</td>
-            <td>{{ row.jangkauan }}</td>
+            <td>{{ row.engagement }}</td>
+            <td>{{ row.tayangan }}</td>
             <td>{{ row.view_non_followers | default(0) }}</td>
             <td>{{ row.cluster + 1 }}</td>
             <td>{{ "%.4f"|format(row.evaluasi) }}</td>
@@ -79,10 +78,10 @@
     </tbody>
 </table>
 
-<!-- 📌 Navigasi Halaman -->
+<!-- Navigasi Halaman -->
 <div class="d-flex justify-content-between align-items-center mt-3">
     {% if page > 1 %}
-        <a href="{{ url_for('instagram.hasil_clustering', page=page-1, cluster_filter=cluster_filter) }}" class="btn btn-outline-secondary">&larr; Prev</a>
+        <a href="{{ url_for('tiktok.hasil_clustering', page=page-1, cluster_filter=cluster_filter) }}" class="btn btn-outline-secondary">&larr; Prev</a>
     {% else %}
         <span></span>
     {% endif %}
@@ -90,12 +89,26 @@
     <span>Page {{ page }} of {{ total_pages }}</span>
 
     {% if page < total_pages %}
-        <a href="{{ url_for('instagram.hasil_clustering', page=page+1, cluster_filter=cluster_filter) }}" class="btn btn-outline-secondary">Next &rarr;</a>
+        <a href="{{ url_for('tiktok.hasil_clustering', page=page+1, cluster_filter=cluster_filter) }}" class="btn btn-outline-secondary">Next &rarr;</a>
     {% endif %}
 </div>
 
-<!-- 🎨 Style -->
+<!-- Tambahkan style CSS -->
 <style>
+    body::before {
+        content: "";
+        background: url("{{ url_for('static', filename='logo_sarastya.png') }}") center center no-repeat;
+        background-size: 40%;
+        opacity: 0.05;
+        filter: blur(1px);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+
     .custom-table {
         width: 100%;
         border-collapse: collapse;

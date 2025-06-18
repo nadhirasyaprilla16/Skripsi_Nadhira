@@ -1,16 +1,19 @@
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import silhouette_score, silhouette_samples, pairwise_distances_argmin
+from sklearn.metrics import silhouette_score, silhouette_samples, davies_bouldin_score
+from sklearn.metrics.pairwise import cosine_distances
 from models import Instagram
 from models import Tiktok
 import numpy as np
 from copy import deepcopy
+history = []
 import matplotlib.pyplot as plt
 import io
 import base64
 
 # --- Instagram Clustering ---
+# Persiapan Data
 def load_instagram_data():
     data = Instagram.query.with_entities(
         Instagram.post_id,
@@ -18,79 +21,57 @@ def load_instagram_data():
         Instagram.post_content,
         Instagram.interaksi,
         Instagram.akun_yang_dijangkau,
-        Instagram.view_non_followers
+        Instagram.view_non_followers,
+        Instagram.post_type
     ).all()
 
-    df = pd.DataFrame(data, columns=["post_id", "produk", "post_content", "interaksi", "jangkauan", "view_non_followers"])
+    df = pd.DataFrame(data, columns=["post_id", "produk", "post_content", "interaksi", "jangkauan", "view_non_followers", "post_type"])
     return df
 
-def cluster_instagram_data(df, n_clusters=3, init_method='k-means++', max_iter=10):
-    """
-    Menjalankan K-Means clustering pada data Instagram dan menghitung silhouette score.
-    Menyimpan riwayat centroid tiap iterasi.
-    """
+def kmeans_clustering_full(df, n_clusters=3, init_method='mean', max_iter=100):
+    # Step 1: Standardisasi data
     fitur = df[["interaksi", "jangkauan", "view_non_followers"]]
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(fitur)
 
-    # Inisialisasi awal centroid dengan 1 iterasi KMeans
-    kmeans = KMeans(n_clusters=n_clusters, init=init_method, n_init=1 if isinstance(init_method, str) else 1, max_iter=300, random_state=42)
-    kmeans.fit(X_scaled)
-    centers = kmeans.cluster_centers_
-    history = [deepcopy(centers)]
+    # Step 2: Inisialisasi centroid
+    if isinstance(init_method, str):
+        if init_method == 'mean':
+            mean_vector = np.mean(X_scaled, axis=0)
+            centroids = [mean_vector]
+            np.random.seed(42)
+            while len(centroids) < n_clusters:
+                idx = np.random.choice(len(X_scaled))
+                centroids.append(X_scaled[idx])
+            centers = np.array(centroids)
 
-    for _ in range(max_iter):
-        labels = pairwise_distances_argmin(X_scaled, centers)
-        new_centers = np.array([X_scaled[labels == i].mean(axis=0) for i in range(n_clusters)])
-        history.append(deepcopy(new_centers))
+        elif init_method == 'kmeans++':
+            model = KMeans(n_clusters=n_clusters, init='k-means++', n_init=1, max_iter=1)
+            model.fit(X_scaled)
+            centers = model.cluster_centers_
 
-        if np.allclose(new_centers, centers):
-            break
-        centers = new_centers
+        else:
+            raise ValueError("Metode centroid tidak dikenali. Gunakan 'mean', 'kmeans++', atau centroid manual (np.ndarray).")
 
-    # Final hasil clustering
-    df["cluster"] = labels + 1  # mulai dari 1
-    df["evaluasi"] = silhouette_samples(X_scaled, labels)
-    silhouette_avg = silhouette_score(X_scaled, labels)
+    elif isinstance(init_method, np.ndarray):
+        init_method = scaler.transform(init_method)
+        if init_method.shape[1] != X_scaled.shape[1]:
+            raise ValueError("Dimensi centroid manual tidak cocok.")
+        centers = init_method
 
-    return df, silhouette_avg, history
-
-def kmeans_with_tracking(df, n_clusters=3, max_iter=10, init='k-means++'):
-    """
-    Melakukan KMeans manual dengan pelacakan centroid, jarak, dan assignment per iterasi.
-    Mendukung inisialisasi centroid dengan metode default 'k-means++' atau 'mean' (rata-rata global).
-    """
-    fitur = df[["interaksi", "jangkauan", "view_non_followers"]]
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(fitur)
-
-    if init == 'mean':
-        # Hitung rata-rata dari seluruh data sebagai centroid pertama
-        mean_vector = np.mean(X_scaled, axis=0)
-        centroids = [mean_vector]
-
-        np.random.seed(42)
-        # Tambahkan centroid lainnya secara acak dari data
-        while len(centroids) < n_clusters:
-            random_idx = np.random.choice(len(X_scaled))
-            centroids.append(X_scaled[random_idx])
-
-        centers = np.array(centroids)
     else:
-        # Gunakan metode default k-means++ dari sklearn
-        kmeans = KMeans(n_clusters=n_clusters, init=init, n_init=1, max_iter=1, random_state=42)
-        kmeans.fit(X_scaled)
-        centers = kmeans.cluster_centers_
+        raise ValueError("Format centroid tidak valid.")
 
+    # Step 3: Iterasi manual
     centroid_history = [deepcopy(centers)]
     distance_matrix = []
     assignments = []
 
     for _ in range(max_iter):
         distances = np.linalg.norm(X_scaled[:, np.newaxis] - centers, axis=2)
-        labels = np.argmin(distances, axis=1)
-
         distance_matrix.append(distances.tolist())
+
+        labels = np.argmin(distances, axis=1)
         assignments.append(labels.tolist())
 
         new_centers = np.array([
@@ -105,50 +86,33 @@ def kmeans_with_tracking(df, n_clusters=3, max_iter=10, init='k-means++'):
 
         centers = new_centers
 
+    # Step 4: Evaluasi
+    if len(np.unique(labels)) < 2:
+        silhouette_avg = 0
+        sample_silhouette = [0] * len(X_scaled)
+    else:
+        sample_silhouette = silhouette_samples(X_scaled, labels)
+        silhouette_avg = silhouette_score(X_scaled, labels)
+
+    # Step 5: Gabungkan hasil ke DataFrame baru
+    df_result = df.copy()
+    df_result["cluster"] = labels
+    df_result["evaluasi"] = sample_silhouette
+
+    # Step 6: Return lengkap
     return {
-        'centroid_history': centroid_history,
-        'distance_matrix': distance_matrix,
-        'assignments': assignments
+        "df": df_result,
+        "silhouette": silhouette_avg,
+        "centroid_history": centroid_history,
+        "assignments": assignments,
+        "distance_matrix": distance_matrix,
+        "labels": labels,
+        "X_scaled": X_scaled,
     }
 
 
 
-def convert_centroid_history_to_df(history):
-    hasil = []
-    for iterasi, centroid in enumerate(history):
-        for i, titik in enumerate(centroid):
-            hasil.append({
-                "Iterasi": iterasi,
-                "Cluster": f"C{i+1}",
-                "x": round(titik[0], 4),
-                "y": round(titik[1], 4),
-                "z": round(titik[2], 4),
-            })
-    return pd.DataFrame(hasil)
 
-def generate_cluster_plot(df):
-    fig, ax = plt.subplots(figsize=(6, 4))
-    scatter = ax.scatter(
-        df["interaksi"],
-        df["jangkauan"],
-        c=df["cluster"],
-        cmap="viridis",
-        s=50,
-        edgecolor='k'
-    )
-    ax.set_xlabel("Interaksi")
-    ax.set_ylabel("Jangkauan")
-    ax.set_title("Clustering Instagram (Interaksi vs Jangkauan)")
-
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    buf.close()
-    plt.close()
-
-    return image_base64
 
 def load_tiktok_data():
     data = Tiktok.query.with_entities(
@@ -162,89 +126,110 @@ def load_tiktok_data():
 
     return pd.DataFrame(data, columns=["post_id", "produk", "post_content", "engagement", "tayangan", "view_non_followers"])
 
-def cluster_tiktok_data(df, n_clusters=3):
+
+def kmeans_clustering_full_tiktok(df, n_clusters, init_method='mean', max_iter=100):
+    # Step 1: Persiapan data (standardisasi)
     fitur = df[["engagement", "tayangan", "view_non_followers"]]
-    X_scaled = StandardScaler().fit_transform(fitur)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(fitur)
 
-    model = KMeans(n_clusters=n_clusters, random_state=42)
-    df["cluster"] = model.fit_predict(X_scaled)
+    # Step 2: Inisialisasi centroid
+    if isinstance(init_method, str) and init_method == 'mean':
+        mean_vector = np.mean(X_scaled, axis=0)
+        centroids = [mean_vector]
+        np.random.seed(42)
+        while len(centroids) < n_clusters:
+            idx = np.random.choice(len(X_scaled))
+            centroids.append(X_scaled[idx])
+        centers = np.array(centroids)
 
-    silhouette_vals = silhouette_samples(X_scaled, df["cluster"])
-    df["evaluasi"] = silhouette_vals
-    silhouette_avg = silhouette_score(X_scaled, df["cluster"] - 1)
-    return df, silhouette_avg
+    elif isinstance(init_method, np.ndarray):
+        init_method = scaler.transform(init_method)
+        if init_method.shape[1] != X_scaled.shape[1]:
+            raise ValueError("Dimensi centroid manual tidak cocok.")
+        centers = init_method
 
-def generate_tiktok_plot(df):
-    fig, ax = plt.subplots(figsize=(6, 4))
-    scatter = ax.scatter(
-        df["engagement"],
-        df["tayangan"],
-        c=df["cluster"],
-        cmap="plasma",
-        s=50,
-        edgecolor='k'
-    )
-    ax.set_xlabel("Engagement")
-    ax.set_ylabel("Tayangan")
-    ax.set_title("Clustering TikTok (Engagement vs Tayangan)")
+    else:
+        raise ValueError("Metode inisialisasi centroid tidak dikenali. Gunakan 'mean' atau centroid manual.")
 
-    buf = io.BytesIO()
+    # Step 3: Iterasi manual
+    centroid_history = [deepcopy(centers)]
+    distance_matrix = []
+    assignments = []
+
+    for _ in range(max_iter):
+        distances = np.linalg.norm(X_scaled[:, np.newaxis] - centers, axis=2)
+        distance_matrix.append(distances.tolist())
+
+        labels = np.argmin(distances, axis=1)
+        assignments.append(labels.tolist())
+
+        new_centers = np.array([
+            X_scaled[labels == i].mean(axis=0) if np.any(labels == i) else centers[i]
+            for i in range(n_clusters)
+        ])
+
+        centroid_history.append(deepcopy(new_centers))
+
+        if np.allclose(new_centers, centers):
+            break
+
+        centers = new_centers
+
+    # Step 4: Evaluasi
+    if len(np.unique(labels)) < 2:
+        silhouette_avg = 0
+        sample_silhouette = [0] * len(X_scaled)
+    else:
+        sample_silhouette = silhouette_samples(X_scaled, labels)
+        silhouette_avg = silhouette_score(X_scaled, labels)
+
+    # Step 5: Hasil dataframe baru
+    df_result = df.copy()
+    df_result["cluster"] = labels
+    df_result["evaluasi"] = sample_silhouette
+
+    # Step 6: Return
+    return {
+        "df": df_result,
+        "silhouette": silhouette_avg,
+        "centroid_history": centroid_history,
+        "assignments": assignments,
+        "distance_matrix": distance_matrix,
+        "labels": labels,
+        "X_scaled": X_scaled
+    }
+
+
+
+# 🔎 Fungsi Generate Scatter Plot Cluster
+def generate_cluster_plot(platform, df, labels):
+    if labels is None:
+        return
+    df['cluster'] = labels
+
+    if platform == 'instagram':
+        x_col = 'interaksi'
+        y_col = 'jangkauan'
+    elif platform == 'tiktok':
+        x_col = 'engagement'
+        y_col = 'tayangan'
+    else:
+        raise ValueError("Platform tidak dikenal.")
+
+    plt.figure(figsize=(6,4))
+    for cluster in sorted(df['cluster'].unique()):
+        cluster_data = df[df['cluster'] == cluster]
+        plt.scatter(
+            cluster_data[x_col],
+            cluster_data[y_col],
+            label=f'Cluster {cluster+1}',
+            alpha=0.6
+        )
+    plt.xlabel(x_col.capitalize())
+    plt.ylabel(y_col.capitalize())
+    plt.title(f'Visualisasi Cluster {platform.capitalize()}')
+    plt.legend()
     plt.tight_layout()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    buf.close()
+    plt.savefig(f'static/visual_{platform}.png')
     plt.close()
-
-    return image_base64
-
-def calculate_silhouette_analysis(df, cluster_labels):
-    features = df[["interaksi", "jangkauan", "view_non_followers"]]
-    X_scaled = StandardScaler().fit_transform(features)
-
-    avg_score = silhouette_score(X_scaled, cluster_labels)
-    sample_scores = silhouette_samples(X_scaled, cluster_labels)
-
-    per_cluster_score = {}
-    for cluster in np.unique(cluster_labels):
-        per_cluster_score[cluster] = sample_scores[cluster_labels == cluster].mean()
-
-    return avg_score, per_cluster_score, sample_scores
-
-def generate_silhouette_plot(df, cluster_labels):
-    features = df[["interaksi", "jangkauan", "view_non_followers"]]
-    X_scaled = StandardScaler().fit_transform(features)
-
-    fig, ax = plt.subplots(figsize=(8, 6))
-    silhouette_plot = ax
-
-    sample_scores = silhouette_samples(X_scaled, cluster_labels)
-    y_lower = 10
-
-    for i in sorted(np.unique(cluster_labels)):
-        ith_cluster_scores = sample_scores[cluster_labels == i]
-        ith_cluster_scores.sort()
-
-        size_cluster_i = ith_cluster_scores.shape[0]
-        y_upper = y_lower + size_cluster_i
-
-        color = plt.cm.viridis(float(i) / len(np.unique(cluster_labels)))
-        silhouette_plot.fill_betweenx(np.arange(y_lower, y_upper),
-                                  0, ith_cluster_scores,
-                                  facecolor=color, edgecolor=color, alpha=0.7)
-
-        silhouette_plot.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i+1))
-        y_lower = y_upper + 10
-
-    silhouette_plot.set_title("Silhouette Plot")
-    silhouette_plot.set_xlabel("Silhouette Coefficient")
-    silhouette_plot.set_ylabel("Cluster")
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=300, bbox_inches='tight')
-    buf.seek(0)
-    img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    buf.close()
-    plt.close()
-
-    return img_base64

@@ -9,7 +9,10 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     {% for category, message in messages %}
-      <div class="alert alert-success">{{ message }}</div>
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
     {% endfor %}
   {% endif %}
 {% endwith %}
@@ -22,32 +25,37 @@
 
     <div class="mb-3">
         <label class="form-label">Produk</label>
-        <input type="text" name="produk" value="{{ post.produk }}" class="form-control" required>
+        <input type="text" name="produk" class="form-control"
+               value="{{ request.form.produk or post.produk }}" required>
     </div>
 
     <div class="mb-3">
         <label class="form-label">Post Content</label>
-        <textarea name="post_content" class="form-control" rows="3" required>{{ post.post_content }}</textarea>
+        <textarea name="post_content" class="form-control" rows="3" required>{{ request.form.post_content or post.post_content }}</textarea>
     </div>
 
     <div class="mb-3">
         <label class="form-label">Interaksi</label>
-        <input type="number" name="interaksi" value="{{ post.interaksi }}" class="form-control" required>
+        <input type="number" name="interaksi" class="form-control"
+               value="{{ request.form.interaksi or post.interaksi }}" required>
     </div>
 
     <div class="mb-3">
         <label class="form-label">Akun yang Dijangkau</label>
-        <input type="number" name="akun_yang_dijangkau" value="{{ post.akun_yang_dijangkau }}" class="form-control" required>
+        <input type="number" name="akun_yang_dijangkau" class="form-control"
+               value="{{ request.form.akun_yang_dijangkau or post.akun_yang_dijangkau }}" required>
     </div>
 
     <div class="mb-3">
         <label class="form-label">View Non Followers</label>
-        <input type="number" step="0.01" name="view_non_followers" value="{{ post.view_non_followers }}" class="form-control" required>
+        <input type="number" step="0.01" name="view_non_followers" class="form-control"
+               value="{{ request.form.view_non_followers or post.view_non_followers }}" required>
     </div>
 
     <div class="mb-3">
         <label class="form-label">Post Type</label>
-        <input type="number" name="post_type" value="{{ post.post_type }}" class="form-control" required>
+        <input type="number" name="post_type" class="form-control"
+               value="{{ request.form.post_type or post.post_type }}" required>
     </div>
 
     <button type="submit" class="btn btn-primary">Update</button>

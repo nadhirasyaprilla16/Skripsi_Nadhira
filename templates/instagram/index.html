@@ -14,12 +14,18 @@
   {% endif %}
 {% endwith %}
 
-<!-- Tombol tambah -->
-<a href="{{ url_for('instagram.tambah_instagram') }}" class="btn btn-success mb-3">➕ Tambah Data</a>
+<!-- Tombol Tambah dan Upload -->
+<a href="{{ url_for('instagram.tambah_instagram') }}" class="btn-add mb-3">
+    <i class="fas fa-plus"></i> Tambah Data
+</a>
+
+<a href="{{ url_for('instagram.upload_excel') }}" class="btn-upload mb-3">
+    <i class="fas fa-upload"></i> Upload Data Excel
+</a>
 
 <!-- Tabel Data -->
-<table class="table table-bordered table-striped">
-    <thead class="table-dark">
+<table class="custom-table">
+    <thead>
         <tr>
             <th>Post ID</th>
             <th>Produk</th>
@@ -42,8 +48,8 @@
             <td>{{ post.view_non_followers }}</td>
             <td>{{ post.post_type }}</td>
             <td>
-                <a href="{{ url_for('instagram.edit_instagram', post_id=post.post_id) }}" class="btn btn-sm btn-primary">Edit</a>
-                <a href="{{ url_for('instagram.hapus_instagram', post_id=post.post_id) }}" class="btn btn-sm btn-danger">Hapus</a>
+                <a href="{{ url_for('instagram.edit_instagram', post_id=post.post_id) }}" class="btn-edit">Edit</a>
+                <a href="{{ url_for('instagram.hapus_instagram', post_id=post.post_id) }}" class="btn-delete">Hapus</a>
             </td>
         </tr>
     {% endfor %}
@@ -56,18 +62,100 @@
     </tbody>
 </table>
 
-<!-- 🔁 Navigasi Halaman -->
-<div class="d-flex justify-content-between align-items-center mt-3">
-    {% if posts.has_prev %}
-        <a href="{{ url_for('instagram.dashboard', page=posts.prev_num) }}" class="btn btn-outline-secondary">&larr; Prev</a>
-    {% else %}
-        <span></span>
-    {% endif %}
-
-    <span>Page {{ posts.page }} of {{ posts.pages }}</span>
-
-    {% if posts.has_next %}
-        <a href="{{ url_for('instagram.dashboard', page=posts.next_num) }}" class="btn btn-outline-secondary">Next &rarr;</a>
-    {% endif %}
+<!-- 🔁 Navigasi Halaman dengan Angka -->
+<div class="d-flex justify-content-center mt-3">
+    <nav>
+        <ul class="pagination">
+            {% for page_num in range(1, posts.pages + 1) %}
+                <li class="page-item {% if posts.page == page_num %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('instagram.dashboard', page=page_num) }}">{{ page_num }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </nav>
 </div>
+
+<!-- Tambahkan style CSS -->
+<style>
+    /* Custom Table Style */
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #fff0f5;
+    }
+
+    .custom-table th {
+        background-color: #f06292;
+        color: white;
+        text-align: center;
+        padding: 10px;
+    }
+
+    .custom-table td {
+        background-color: #f8f0fa;
+        text-align: center;
+        padding: 10px;
+        border-bottom: 1px solid #e0c6f1;
+    }
+
+    .custom-table tr:hover td {
+        background-color: #f5e6f7;
+    }
+
+    .btn-add, .btn-upload {
+        background: linear-gradient(90deg, #8e24aa, #ec407a);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+        margin-right: 5px;
+        transition: background 0.3s, transform 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-add:hover, .btn-upload:hover {
+        background: linear-gradient(90deg, #6a1b9a, #d81b60);
+        transform: translateY(-2px);
+    }
+
+    .btn-edit, .btn-delete {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+        margin: 2px;
+    }
+
+    .btn-edit {
+        background-color: #6a1b9a;
+        color: white;
+    }
+
+    .btn-edit:hover {
+        background-color: #4a148c;
+    }
+
+    .btn-delete {
+        background-color: #e53935;
+        color: white;
+    }
+
+    .btn-delete:hover {
+        background-color: #c62828;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #8e24aa;
+        border-color: #8e24aa;
+    }
+
+    .pagination .page-link {
+        color: #8e24aa;
+    }
+</style>
 {% endblock %}

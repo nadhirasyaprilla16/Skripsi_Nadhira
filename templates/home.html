@@ -1,13 +1,122 @@
 {% extends 'base.html' %}
-
-{% block title %}Dashboard Utama{% endblock %}
+{% block title %}Dashboard Analisis Sosial Media{% endblock %}
 
 {% block content %}
-<h1>Selamat Datang di Dashboard Analisis Sosial Media</h1>
-<!-- <p>Silakan pilih platform yang ingin Anda kelola:</p> -->
+<div class="header-container">
+    <img src="{{ url_for('static', filename='logo_sarastya.png') }}" alt="Logo Sarastya" class="logo">
+    <h2 class="mb-4">Dashboard Sarastya</h2>
+</div>
 
-<!-- <ul>
-    <li><a href="{{ url_for('instagram.dashboard') }}">Kelola Data Instagram</a></li>
-    <li><a href="{{ url_for('tiktok.index') }}">Kelola Data TikTok</a></li>
-</ul> -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <h5>Total Post Instagram</h5>
+            <h3>{{ total_instagram }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <h5>Dominan Cluster Instagram</h5>
+            <h3>Cluster {{ dominant_cluster_instagram }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <h5>Total Post TikTok</h5>
+            <h3>{{ total_tiktok }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <h5>Dominan Cluster TikTok</h5>
+            <h3>Cluster {{ dominant_cluster_tiktok }}</h3>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h4>Visualisasi Cluster Instagram</h4>
+        <img src="{{ url_for('static', filename='visual_instagram.png') }}" alt="Cluster Instagram" class="img-fluid mb-4">
+    </div>
+    <div class="col-md-6">
+        <h4>Visualisasi Cluster TikTok</h4>
+        <img src="{{ url_for('static', filename='visual_tiktok.png') }}" alt="Cluster TikTok" class="img-fluid mb-4">
+    </div>
+</div>
+
+<!-- Tambahkan CSS -->
+<style>
+/* Logo & Heading */
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+}
+
+.header-container .logo {
+    width: 80px;
+    height: auto;
+    margin-right: 15px;
+}
+
+h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-left: 10px;
+    flex-grow: 1;
+}
+
+/* Card styling */
+.card {
+    background: linear-gradient(135deg, #f8bbd0, #f48fb1);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    color: white;
+    padding: 20px;
+    transition: transform 0.2s;
+    text-align: center;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card h5 {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+.card h3 {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+/* Responsive Layout */
+.row .col-md-3 {
+    margin-bottom: 20px;
+}
+
+.img-fluid {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+h4 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+/* Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap');
+</style>
 {% endblock %}
